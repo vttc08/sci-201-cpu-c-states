@@ -8,14 +8,15 @@ dotenv.load_dotenv('.env')
 url = os.getenv("INFLUXDB_URL")
 token = os.getenv("INFLUXDB_TOKEN")
 org = os.getenv("INFLUXDB_ORG")
+bucket = os.getenv("INFLUXDB_BUCKET")
 
 # Making InfluxDB Query
-query = 'from(bucket:"homeassistant") |> range(start: -11m, stop: -1m) \
+query = f'from(bucket:"{bucket}") |> range(start: -11m, stop: -1m) \
   |> filter(fn: (r) => r["entity_id"] == "sonoff_1001e01c1e_power")\
   |> filter(fn: (r) => r["_field"] == "value")\
   ' # copied from InfluxDB dashboard, data from a 10 minute interval
 
-client = InfluxDBClient(url="http://10.10.120.16:8086", token=token, org=org)
+client = InfluxDBClient(url=url, token=token, org=org)
 query_api = client.query_api()
 tables = query_api.query(query=query)
 

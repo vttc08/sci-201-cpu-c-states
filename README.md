@@ -21,12 +21,14 @@ Fill out the `.env` file with the following information:
 INFLUXDB_URL=''
 INFLUXDB_TOKEN="" 
 INFLUXDB_ORG=""
+INFLUXDB_BUCKET=""
 ```
+To use a different treatment (C0,C3,C7), the code has to be adjusted manually.
 
 The code only run once, the data collection is done by a cron job. The cron job is set to run every hour at 20 min from 10 PM to 10 AM according to the design of the experiment. To schedule the cron job, edit crontab as such:
 
 ```bash
-20 22-23,0-10 * * * cd $this_working_dir /path/to/python/venv /path/to/influxdb.py
+20 22-23,0-10 * * * cd $this_working_dir && venv/bin/python influxdb.py
 ```
 
 ### RStudio Code (Randomized Block ANOVA)
