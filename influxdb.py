@@ -11,7 +11,7 @@ org = os.getenv("INFLUXDB_ORG")
 bucket = os.getenv("INFLUXDB_BUCKET")
 
 # Making InfluxDB Query
-query = f'from(bucket:"{bucket}") |> range(start: -11m, stop: -1m) \
+query = f'from(bucket:"{bucket}") |> range(start: -15m, stop: -5m) \
   |> filter(fn: (r) => r["entity_id"] == "sonoff_1001e01c1e_power")\
   |> filter(fn: (r) => r["_field"] == "value")\
   ' # copied from InfluxDB dashboard, data from a 10 minute interval
@@ -20,41 +20,34 @@ client = InfluxDBClient(url=url, token=token, org=org)
 query_api = client.query_api()
 tables = query_api.query(query=query)
 
-measurement = []
-records = []
+records = [] # list of time, value pairs in a list
 for table in tables:
     for row in table.records:
-        value = row.values["_value"] # row.values is a dictionary and _value is the key
-        measurement.append(value)
-        record = [row.values["_time"], row.values["_value"]]
-        records.append(record) # integration method
+        record = [row.values["_time"].timestamp(), row.values["_value"]]
+        records.append(record)
 
-# Integration of Data
-t_intial = records[0][0].timestamp()
-for i in range(len(records)): # list modification
-    records[i][0] = records[i][0].timestamp() - t_intial
+# CHANGEME
+cstate = 'C7' # C-State of the CPU
 
-area = 0
-for i in range(len(records)-1):
-    ts_i = records[i][0]
-    ts_f = records[i+1][0]
-    v_i = records[i][1]
-    v_f = records[i+1][1]
-    elapsed = ts_f - ts_i
-    area += (v_i * elapsed + (v_f - v_i) * elapsed / 2) / records[-1][0] # trapezoidal
+# define static variables
+utid = round(dt.datetime.now().timestamp())
+cstate='C7'
+hrs = dt.datetime.now().hour
+uptime = os.popen("uptime | sed 's/.*load average: //'").read().strip().split(',') # 1min, 5min, 15min load averages
+uptime = list(map(float, uptime))
+cpu = round((uptime[2]*3-uptime[1])/2,2) 
+'''
+We are interested in the 10 minute load average from -15m to -5m. Therefore we can multiply 15 min load average
+by 3 because when we the 15 min load average can be broken down into same 3 5 min load averages. We know the first part
+of the 15 min load average is the 5 min load average, and the second and third parts has to add up to the sum of the 15
+min load average. Therefore, we can multiply the 15 min load average by 3, substract the 5 min load average and divide by 2.
+'''
 
 
+if not os.path.isfile('influx-data.csv'): # create file if it does not exist and write header
+    with open('influx-data.csv', 'w') as f:
+        f.write('utid,C-state,hrs,time,value,cpu\n') # write header
 
-# Post Processing of Files
-c = 'C7' # C-State of the CPU
-avg_consumption = sum(measurement) / len(measurement)
-time = dt.datetime.now()
-now = time.strftime("%Y-%m-%d %H:%M:%S")
-now_hrs = time.hour
-
-if not os.path.isfile('influxdb.csv'): # create file if it does not exist and write header
-    with open('influxdb.csv','w') as csvfile:
-        csvfile.write('Timestamp, Hrs, Consumption, C-State\n')
-
-with open('influxdb.csv','a') as csvfile:
-    csvfile.write(f'{now}, {now_hrs}, {area}, {c}\n')
+for i in records:
+    with open('influx-data.csv', 'a') as f:
+        f.write(f'{utid},{cstate},{hrs},{i[0]},{i[1]},{cpu}\n')

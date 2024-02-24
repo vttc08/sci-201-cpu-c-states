@@ -3,4 +3,8 @@ __pycache__
 *.pyc
 .env
 *.csv
+*.ssv
+*.mp.jpg
+*.mp.png
 .Rhistory
+test.ipynb
