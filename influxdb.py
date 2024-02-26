@@ -26,12 +26,9 @@ for table in tables:
         record = [row.values["_time"].timestamp(), row.values["_value"]]
         records.append(record)
 
-# CHANGEME
-cstate = 'C7' # C-State of the CPU
-
 # define static variables
 utid = round(dt.datetime.now().timestamp())
-cstate='C7'
+cstate='C7' # CHANGEME
 hrs = dt.datetime.now().hour
 uptime = os.popen("uptime | sed 's/.*load average: //'").read().strip().split(',') # 1min, 5min, 15min load averages
 uptime = list(map(float, uptime))
